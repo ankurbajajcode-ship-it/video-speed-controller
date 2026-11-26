@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Speed Controller - Test Laboratory</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 30px 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+    h1 { font-size: 26px; color: #fff; margin-bottom: 8px; }
+    p { color: var(--text-muted); font-size: 14px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .video-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 640px) {
+      .video-grid { grid-template-columns: 1fr; }
+    }
+    .video-wrapper {
+      position: relative;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    video {
+      width: 100%;
+      height: 220px;
+      background: #000;
+      display: block;
+    }
+    .video-controls-bar {
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+    .rate-badge {
+      background: var(--accent);
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .btn {
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #2563eb; }
+    .btn-secondary { background: #475569; }
+    .btn-secondary:hover { background: #64748b; }
+    .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .test-list {
+      list-style-type: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .test-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .kbd-combo {
+      display: inline-flex;
+      gap: 4px;
+      background: #0f172a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 12px;
+    }
+    input, textarea {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 6px;
+      font-family: inherit;
+    }
+    .log-box {
+      background: #090d16;
+      border: 1px solid var(--border);
+      padding: 12px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 140px;
+      overflow-y: auto;
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Video Speed Controller - Test Page</h1>
+      <p>Use this page to verify all features: presets, keyboard shortcuts, on-screen display, and SPA dynamic video insertion.</p>
+    </header>
+
+    <!-- Video Playground -->
+    <div class="card">
+      <div class="card-title">
+        <span>Active Videos</span>
+        <button class="btn btn-secondary" id="btnTogglePlay">Play / Pause All</button>
+      </div>
+
+      <div class="video-grid" id="videoGrid">
+        <div class="video-wrapper" id="v1Wrapper">
+          <canvas id="canvas1" width="480" height="270" style="display:none;"></canvas>
+          <video id="video1" controls loop playsinline></video>
+          <div class="video-controls-bar">
+            <span>Video 1 (Primary)</span>
+            <span>Speed: <span class="rate-badge" id="v1Speed">1.00x</span></span>
+          </div>
+        </div>
+
+        <div class="video-wrapper" id="v2Wrapper">
+          <canvas id="canvas2" width="480" height="270" style="display:none;"></canvas>
+          <video id="video2" controls loop playsinline></video>
+          <div class="video-controls-bar">
+            <span>Video 2 (Secondary)</span>
+            <span>Speed: <span class="rate-badge" id="v2Speed">1.00x</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn" id="btnFullscreen">Enter Fullscreen (Test Fullscreen Overlay)</button>
+        <button class="btn btn-secondary" id="btnAddDynamicVideo">+ Simulate SPA Dynamic Video Injection</button>
+        <button class="btn btn-secondary" id="btnSimulateReset">Simulate Site Resetting Rate to 1.00x</button>
+      </div>
+    </div>
+
+    <!-- Shortcuts Verification & Typing Guard -->
+    <div class="card">
+      <div class="card-title">Keyboard Shortcuts & Form Protection Test</div>
+      <ul class="test-list">
+        <li class="test-item">
+          <div class="kbd-combo">⌘ + ⇧ + .</div>
+          <div><strong>Increase Speed</strong>: Steps sequentially up through the 15 presets to 4.00x.</div>
+        </li>
+        <li class="test-item">
+          <div class="kbd-combo">⌘ + ⇧ + ,</div>
+          <div><strong>Decrease Speed</strong>: Steps sequentially down through the 15 presets to 0.25x.</div>
+        </li>
+        <li class="test-item">
+          <div class="kbd-combo">⌘ + ⇧ + 0</div>
+          <div><strong>Reset Speed</strong>: Immediately restores playback speed to 1.00x.</div>
+        </li>
+      </ul>
+
+      <div style="margin-top: 14px;">
+        <label for="testInput"><strong>Input Field Protection Test:</strong> (Typing shortcuts here must NOT change video speed)</label>
+        <input type="text" id="testInput" placeholder="Click here and press ⌘+Shift+. or ⌘+Shift+, to verify shortcuts are ignored while typing">
+      </div>
+    </div>
+
+    <!-- Live Event Log -->
+    <div class="card">
+      <div class="card-title">
+        <span>Live Events Log</span>
+        <button class="btn btn-secondary" id="btnClearLog" style="font-size:11px; padding:4px 8px;">Clear</button>
+      </div>
+      <div class="log-box" id="eventLog">Ready for testing. Video Speed Controller loaded.</div>
+    </div>
+  </div>
+
+  <script>
+    const logBox = document.getElementById('eventLog');
+    function log(msg) {
+      const time = new Date().toLocaleTimeString();
+      logBox.innerHTML = `[${time}] ${msg}<br>` + logBox.innerHTML;
+    }
+
+    // Generate animated video streams for video1 and video2 using HTML5 Canvas & Web Audio
+    function setupCanvasVideo(canvasId, videoId, label, color) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      const video = document.getElementById(videoId);
+
+      let angle = 0;
+      function draw() {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Animated rotating speed gauge
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(angle);
+        ctx.fillStyle = color;
+        ctx.fillRect(-60, -60, 120, 120);
+        ctx.restore();
+
+        // Label
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, canvas.width / 2, canvas.height / 2 - 80);
+        ctx.font = '16px monospace';
+        ctx.fillText('playbackRate: ' + video.playbackRate.toFixed(2) + 'x', canvas.width / 2, canvas.height / 2 + 95);
+
+        angle += 0.04 * (video.playbackRate || 1.0);
+        requestAnimationFrame(draw);
+      }
+      draw();
+
+      const stream = canvas.captureStream(30);
+      video.srcObject = stream;
+      video.play().catch(() => {});
+    }
+
+    setupCanvasVideo('canvas1', 'video1', 'Primary HTML5 Video', '#3b82f6');
+    setupCanvasVideo('canvas2', 'video2', 'Secondary HTML5 Video', '#8b5cf6');
+
+    // Monitor ratechange events
+    function attachRateMonitor(video, badgeId, name) {
+      video.addEventListener('ratechange', () => {
+        const badge = document.getElementById(badgeId);
+        if (badge) badge.textContent = video.playbackRate.toFixed(2) + 'x';
+        log(`${name} playbackRate changed to ${video.playbackRate.toFixed(2)}x`);
+      });
+    }
+
+    const v1 = document.getElementById('video1');
+    const v2 = document.getElementById('video2');
+    attachRateMonitor(v1, 'v1Speed', 'Video 1');
+    attachRateMonitor(v2, 'v2Speed', 'Video 2');
+
+    // Controls
+    document.getElementById('btnTogglePlay').addEventListener('click', () => {
+      if (v1.paused) {
+        v1.play(); v2.play();
+        log('Played all videos');
+      } else {
+        v1.pause(); v2.pause();
+        log('Paused all videos');
+      }
+    });
+
+    document.getElementById('btnFullscreen').addEventListener('click', () => {
+      const wrapper = document.getElementById('v1Wrapper');
+      if (wrapper.requestFullscreen) {
+        wrapper.requestFullscreen();
+      }
+    });
+
+    document.getElementById('btnAddDynamicVideo').addEventListener('click', () => {
+      const grid = document.getElementById('videoGrid');
+      const newWrapper = document.createElement('div');
+      newWrapper.className = 'video-wrapper';
+      const canvas = document.createElement('canvas');
+      canvas.width = 480; canvas.height = 270; canvas.style.display = 'none';
+      newWrapper.appendChild(canvas);
+      const newVid = document.createElement('video');
+      newVid.controls = true; newVid.autoplay = true; newVid.loop = true;
+      newWrapper.appendChild(newVid);
+
+      const bar = document.createElement('div');
+      bar.className = 'video-controls-bar';
+      const bId = 'vDynSpeed_' + Date.now();
+      bar.innerHTML = `<span>Dynamic Video (SPA)</span><span>Speed: <span class="rate-badge" id="${bId}">1.00x</span></span>`;
+      newWrapper.appendChild(bar);
+      grid.appendChild(newWrapper);
+
+      const ctx = canvas.getContext('2d');
+      let a = 0;
+      function d() {
+        ctx.fillStyle = '#0f172a'; ctx.fillRect(0,0,480,270);
+        ctx.save(); ctx.translate(240,135); ctx.rotate(a); ctx.fillStyle = '#10b981'; ctx.fillRect(-50,-50,100,100); ctx.restore();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Dynamic Video', 240, 50);
+        a += 0.05 * (newVid.playbackRate || 1);
+        requestAnimationFrame(d);
+      }
+      d();
+      newVid.srcObject = canvas.captureStream(30);
+      newVid.play().catch(() => {});
+      attachRateMonitor(newVid, bId, 'Dynamic Video');
+      log('Simulated dynamic video element added to DOM (SPA)');
+    });
+
+    document.getElementById('btnSimulateReset').addEventListener('click', () => {
+      log('Simulating player resetting playbackRate to 1.00x...');
+      v1.playbackRate = 1.00;
+    });
+
+    document.getElementById('btnClearLog').addEventListener('click', () => {
+      logBox.innerHTML = '';
+    });
+  </script>
+</body>
+</html>
